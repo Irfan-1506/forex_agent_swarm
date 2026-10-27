@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Institutional Forex Agent Swarm | Quotex Direct Execution</title>
+  <script src="/lightweight-charts.js"></script>
+  <script>
+    if (typeof LightweightCharts === 'undefined') {
+      document.write('<script src="https://unpkg.com/lightweight-charts@4.2.1/dist/lightweight-charts.standalone.production.js"><\/script>');
+    }
+  </script>
+  <style>
+    :root {
+      --bg-dark: #0a0d14;
+      --card-bg: #111827;
+      --card-border: #1f293d;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --green: #10b981;
+      --green-glow: rgba(16, 185, 129, 0.2);
+      --red: #ef4444;
+      --red-glow: rgba(239, 68, 68, 0.2);
+      --amber: #f59e0b;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    body { background-color: var(--bg-dark); color: var(--text-main); min-height: 100vh; padding: 16px 24px; }
+
+    /* Header */
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-bottom: 16px; border-bottom: 1px solid var(--card-border); margin-bottom: 20px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.5px; }
+    .brand .badge { background: #1e293b; color: #38bdf8; padding: 3px 8px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
+    
+    .status-panel { display: flex; align-items: center; gap: 16px; }
+    .stat-pill { background: #1a2234; border: 1px solid var(--card-border); padding: 6px 14px; border-radius: 8px; font-size: 0.82rem; }
+    .stat-pill span { color: var(--text-muted); margin-right: 4px; }
+    .stat-pill b { color: #fff; }
+
+    .btn-kill {
+      background: #dc2626; color: #fff; border: none; padding: 8px 16px; border-radius: 8px;
+      font-weight: 700; font-size: 0.82rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-kill:hover { background: #b91c1c; }
+    .btn-kill.active { background: #10b981; }
+
+    /* Buzzer Switch Button */
+    .btn-buzzer {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 8px 16px;
+      border-radius: 8px; font-weight: 700; font-size: 0.82rem; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; transition: all 0.2s;
+    }
+    .btn-buzzer.active {
+      background: #064e3b; color: #34d399; border-color: #059669;
+      box-shadow: 0 0 14px rgba(16, 185, 129, 0.35);
+    }
+    .btn-buzzer.pulsing {
+      animation: buzzer-pulse 0.5s ease-in-out infinite alternate;
+    }
+    @keyframes buzzer-pulse {
+      0% { transform: scale(1); box-shadow: 0 0 8px #10b981; }
+      100% { transform: scale(1.08); box-shadow: 0 0 25px #34d399; }
+    }
+
+    /* Quotex Controls Bar */
+    .controls-bar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      background: var(--card-bg); border: 1px solid var(--card-border); padding: 12px 18px; border-radius: 12px;
+      margin-bottom: 20px; gap: 14px;
+    }
+    .pair-select-group { display: flex; align-items: center; gap: 10px; }
+    .pair-select-group label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    select.pair-select {
+      background: #1e293b; border: 1px solid #334155; color: #fff; padding: 8px 14px;
+      border-radius: 6px; font-size: 0.95rem; font-weight: 700; cursor: pointer; outline: none;
+    }
+
+    .timeframe-group { display: flex; align-items: center; gap: 6px; }
+    .timeframe-group .tf-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; margin-right: 6px; }
+    .tf-btn {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 6px 12px;
+      border-radius: 6px; font-size: 0.82rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    }
+    .tf-btn:hover { background: #334155; color: #fff; }
+    .tf-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .tf-btn.blocked {
+      background: #141a26; color: #64748b; border-color: #1f2738; cursor: not-allowed; opacity: 0.65;
+    }
+
+    .watchlist-panel {
+      background: linear-gradient(135deg, #111827 0%, #0c121e 100%);
+      border: 1px solid #1f293d;
+    }
+
+    /* Payout Control */
+    .payout-group { display: flex; align-items: center; gap: 8px; }
+    .payout-label { font-size: 0.85rem; color: var(--text-muted); font-weight: 600; }
+    .payout-input {
+      background: #0f172a; border: 1px solid #334155; color: #34d399; font-weight: 800;
+      width: 54px; padding: 6px 8px; border-radius: 6px; font-size: 0.88rem; text-align: center;
+    }
+    .payout-quick-btns { display: flex; gap: 4px; }
+    .payout-btn {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 5px 8px;
+      border-radius: 5px; font-size: 0.76rem; font-weight: 700; cursor: pointer; transition: all 0.15s;
+    }
+    .payout-btn:hover { background: #334155; color: #fff; }
+    .payout-btn.active { background: #064e3b; color: #34d399; border-color: #059669; }
+
+    /* Live Stream Toggle Button */
+    .btn-stream {
+      background: #1e293b; color: #94a3b8; border: 1px solid #334155; padding: 8px 14px;
+      border-radius: 6px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.2s;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .btn-stream.active {
+      background: #0f291e; color: #34d399; border-color: #059669;
+      box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+    }
+
+    .action-group { display: flex; gap: 10px; align-items: center; }
+    .btn-analyze {
+      background: #2563eb; color: #fff; border: none; padding: 8px 18px; border-radius: 6px;
+      font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-analyze:hover { background: #1d4ed8; }
+
+    /* Quotex Main Direction Banner */
+    .hero-action-card {
+      background: linear-gradient(135deg, #131b2e 0%, #17233d 100%);
+      border: 2px solid #2563eb; border-radius: 14px; padding: 22px;
+      margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .hero-left { max-width: 65%; }
+    .hero-header-tag { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 1px; color: #38bdf8; font-weight: 700; margin-bottom: 6px; }
+    .hero-narrative { font-size: 1.15rem; line-height: 1.5; font-weight: 500; }
+    .hero-right { text-align: right; }
+    .direction-badge {
+      display: inline-block; font-size: 2.1rem; font-weight: 900; padding: 8px 24px;
+      border-radius: 10px; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .direction-badge.CALL { background: var(--green); color: #fff; box-shadow: 0 0 20px var(--green-glow); }
+    .direction-badge.PUT { background: var(--red); color: #fff; box-shadow: 0 0 20px var(--red-glow); }
+    .direction-badge.WAIT { background: var(--amber); color: #000; }
+    .hero-confidence { font-size: 0.95rem; font-weight: 700; color: #cbd5e1; }
+
+    /* Quotex Live Terminal Chart */
+    .chart-terminal-panel {
+      background: #080d16; border: 1px solid #1e293b; padding: 16px;
+      margin-bottom: 22px; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.55);
+    }
+    .chart-top-bar {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center;
+      margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #172033; gap: 10px;
+    }
+    .chart-asset-info { display: flex; align-items: center; gap: 10px; }
+    .chart-asset-name { font-size: 1.35rem; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+    .payout-pill { background: #064e3b; color: #34d399; font-size: 0.76rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+    .tf-badge-pill { background: #1e293b; color: #38bdf8; font-size: 0.76rem; font-weight: 800; padding: 3px 8px; border-radius: 4px; }
+    .chart-price-box { display: flex; align-items: baseline; gap: 8px; margin-left: 10px; }
+    .chart-price-box .price-val { font-size: 1.45rem; font-weight: 900; color: #38bdf8; font-family: monospace; letter-spacing: -0.5px; }
+    .chart-price-box .price-spread { font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
+    .chart-legend-info { display: flex; flex-wrap: wrap; gap: 14px; font-size: 0.78rem; color: #cbd5e1; font-weight: 600; }
+    .legend-item { display: flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+    .chart-ohlc-bar {
+      display: flex; gap: 18px; font-size: 0.82rem; color: #94a3b8; font-family: monospace;
+      padding: 4px 6px 10px 6px;
+    }
+    .chart-ohlc-bar b { color: #f8fafc; font-weight: 700; }
+    #quotex-chart-container {
+      width: 100%; height: 420px; border-radius: 8px; overflow: hidden; background: #080d16;
+    }
+
+    /* Quotex Asymmetry & Demo Mode Warning Banner */
+    .quotex-risk-banner {
+      background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.35);
+      border-radius: 10px; padding: 12px 18px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 14px; font-size: 0.83rem; line-height: 1.5; color: #fde68a;
+    }
+    .quotex-risk-banner .warning-icon { font-size: 1.4rem; line-height: 1; flex-shrink: 0; }
+    .ci-subtext { font-size: 0.73rem; color: #94a3b8; font-weight: 600; margin-top: 3px; font-family: monospace; }
+    .asymmetry-box {
+      background: #101626; border: 1px solid #1e293b; border-radius: 8px; padding: 10px 14px; margin-top: 12px;
+      font-size: 0.8rem; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .asymmetry-item { display: flex; flex-direction: column; }
+    .asymmetry-item .lbl { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; }
+    .asymmetry-item .val { font-size: 0.95rem; font-weight: 800; color: #f8fafc; }
+
+    /* Layout Grid */
+    .grid-layout { display: grid; grid-template-columns: 1.25fr 0.95fr; gap: 20px; }
+
+    /* Card Panels */
+    .panel {
+      background: var(--card-bg); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 18px; margin-bottom: 20px;
+    }
+    .panel-header {
+      font-size: 0.95rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+      color: #cbd5e1; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Market Metrics */
+    .metrics-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .metric-item { background: #162032; border: 1px solid #233149; padding: 10px 14px; border-radius: 8px; }
+    .metric-item .lbl { font-size: 0.75rem; color: var(--text-muted); display: block; margin-bottom: 2px; }
+    .metric-item .val { font-size: 1.05rem; font-weight: 700; color: #f8fafc; }
+
+    /* Structural Breakdown Table */
+    table.breakdown-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    table.breakdown-table th {
+      text-align: left; font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;
+      padding: 8px 10px; border-bottom: 1px solid #233149;
+    }
+    table.breakdown-table td {
+      padding: 10px 10px; font-size: 0.85rem; border-bottom: 1px solid #1a2436; color: #e2e8f0;
+    }
+    .bias-pill { padding: 3px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; }
+    .bias-bull { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+    .bias-bear { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .bias-neut { background: rgba(148, 163, 184, 0.2); color: #94a3b8; }
+
+    /* Rationale List */
+    .rationale-list { list-style: none; margin-top: 8px; }
+    .rationale-list li {
+      font-size: 0.86rem; line-height: 1.5; color: #cbd5e1; margin-bottom: 8px;
+      padding-left: 12px; border-left: 2px solid var(--blue);
+    }
+
+    /* Time Machine Simulator Card */
+    .timemachine-box {
+      background: linear-gradient(135deg, #1e1b4b 0%, #172554 100%);
+      border: 1px solid #4338ca; border-radius: 10px; padding: 16px; margin-bottom: 14px;
+    }
+    .tm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .tm-title { font-size: 0.85rem; font-weight: 800; color: #a5b4fc; text-transform: uppercase; }
+    .tm-badge { background: #312e81; color: #c7d2fe; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px; }
+    .tm-stats { display: flex; justify-content: space-around; text-align: center; margin-top: 8px; }
+    .tm-stat-num { font-size: 1.3rem; font-weight: 800; }
+    .tm-stat-lbl { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-top: 2px; }
+
+    /* 28-Pair Scanner Table */
+    .scanner-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .scanner-table th { text-align: left; padding: 6px 8px; color: var(--text-muted); font-size: 0.72rem; border-bottom: 1px solid #233149; }
+    .scanner-table td { padding: 8px 8px; border-bottom: 1px solid #172030; }
+    .rank-hot { color: #f59e0b; font-weight: 800; }
+
+    /* Alerts log */
+    .alert-box { max-height: 180px; overflow-y: auto; font-size: 0.8rem; }
+    .alert-row { padding: 6px 8px; border-bottom: 1px solid #1a2234; display: flex; gap: 8px; }
+    .alert-time { color: var(--text-muted); font-family: monospace; }
+    .alert-sev-TRADE { color: #34d399; font-weight: 700; }
+    .alert-sev-WARNING { color: #fbbf24; font-weight: 700; }
+    .alert-sev-CRITICAL { color: #f87171; font-weight: 700; }
+    .alert-sev-INFO { color: #93c5fd; }
+
+    /* Watchlist & Action Trigger Engine */
+    .watchlist-panel {
+      background: linear-gradient(135deg, #0b1329 0%, #0d1b38 100%);
+      border: 1px solid #1e3a8a; border-radius: 12px; padding: 18px; margin-bottom: 20px;
+    }
+    .wl-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .wl-title { font-size: 0.95rem; font-weight: 800; color: #60a5fa; text-transform: uppercase; letter-spacing: 0.5px; }
+    .wl-status-badge { font-size: 0.75rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; }
+    .wl-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .wl-meta-card { background: #13203c; border: 1px solid #1e2e4e; border-radius: 8px; padding: 10px; text-align: center; }
+    .wl-meta-lbl { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; margin-bottom: 4px; }
+    .wl-meta-val { font-size: 0.95rem; font-weight: 800; color: #f8fafc; }
+    .wl-missing-box { background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .wl-missing-title { font-size: 0.76rem; color: #f59e0b; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; }
+    .wl-missing-list { list-style: none; margin: 0; padding: 0; }
+    .wl-missing-list li { font-size: 0.8rem; color: #cbd5e1; padding: 3px 0; display: flex; align-items: center; gap: 6px; }
+    .wl-missing-list li::before { content: "⏳"; font-size: 0.75rem; }
+    .wl-trigger-banner {
+      background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: 8px; padding: 10px 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .wl-trigger-icon { font-size: 1.2rem; }
+    .wl-trigger-text { font-size: 0.84rem; color: #34d399; font-weight: 600; line-height: 1.4; }
+
+    /* Mobile & Tablet Responsive Media Query */
+    @media (max-width: 900px) {
+      body { padding: 10px; }
+      header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .status-panel { flex-wrap: wrap; width: 100%; justify-content: flex-start; gap: 8px; }
+      .grid-layout { grid-template-columns: 1fr; }
+      .hero-action-card { flex-direction: column; text-align: center; gap: 16px; }
+      .hero-left { max-width: 100%; }
+      .hero-right { text-align: center; }
+      .chart-top-bar { flex-direction: column; align-items: flex-start; gap: 8px; }
+      #quotex-chart-container { height: 340px !important; }
+      .controls-bar { flex-direction: column; align-items: stretch; }
+      .timeframe-group { flex-wrap: wrap; }
+      .timeframe-group .tf-btn { flex: 1 1 40px; text-align: center; padding: 8px 4px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div class="brand">
+      <h1>FOREX SWARM</h1>
+      <span class="badge">14 AGENTS TIER-4</span>
+      <span class="badge" style="background:#064e3b; color:#34d399;">QUOTEX ENGINE</span>
+    </div>
+    <div class="status-panel">
+      <div class="stat-pill"><span>Equity:</span><b id="hdr-equity">$100,000.00</b></div>
+      <div class="stat-pill"><span>Drawdown:</span><b id="hdr-drawdown">0.00%</b></div>
+      <div class="stat-pill"><span>Loss Streak:</span><b id="hdr-loss-streak" style="color:var(--green);">0 / 2</b></div>
+      <div class="stat-pill"><span>Session Trades:</span><b id="hdr-session-trades">0 / 3</b></div>
+      <div class="stat-pill"><span>Session:</span><b id="hdr-session-name" style="color:#38bdf8;">ACTIVE</b></div>
+      <button class="btn-buzzer active" id="btn-buzzer-toggle" onclick="toggleBuzzer()" title="Toggle Audio Buzzer for CALL/PUT signals >= 60%">
+        <span id="buzzer-icon">🔔</span> BUZZER: <b id="buzzer-status">ON</b> (≥60%)
+      </button>
+      <a href="/forex_agent_swarm.zip" download="forex_agent_swarm.zip" style="text-decoration:none;">
+        <button class="btn-buzzer" style="border-color:#38bdf8; color:#38bdf8; background:#0f172a;" title="Download complete codebase ZIP to this device">
+          📦 ZIP
+        </button>
+      </a>
+      <button class="btn-kill" id="btn-kill-toggle" onclick="toggleKillSwitch()">HALT SWARM</button>
+    </div>
+  </header>
+
+  <!-- Quotex Asymmetry & Demo Mode Warning Banner -->
+  <div class="quotex-risk-banner">
+    <span class="warning-icon">🛡️</span>
+    <div>
+      <b>STRICT SIMULATION MODE ENFORCED — REAL QUOTEX EXECUTION BLOCKED:</b>
+      Binary options impose extreme asymmetric payoff (~70–85% payout on win vs 100% loss on defeat). The swarm enforces fat-tailed bootstrap Monte Carlo and requires the 95% Confidence Interval lower bound to clear the break-even hurdle before suggesting any action. Real live execution is disabled due to offshore counterparty, withdrawal, and regulatory risks.
+    </div>
+  </div>
+
+  <!-- Quotex Controls Bar -->
+  <div class="controls-bar">
+    <div class="pair-select-group">
+      <label for="pair-select">FOREX ASSET:</label>
+      <select id="pair-select" class="pair-select" onchange="runCycle()">
+        <option value="EUR/USD" selected>EUR/USD</option>
+        <option value="GBP/USD">GBP/USD</option>
+        <option value="USD/JPY">USD/JPY</option>
+        <option value="AUD/USD">AUD/USD</option>
+        <option value="USD/CAD">USD/CAD</option>
+        <option value="USD/CHF">USD/CHF</option>
+        <option value="NZD/USD">NZD/USD</option>
+      </select>
+    </div>
+
+    <!-- Quotex Timeframes with Blocked Negative Expectancy Sub-Minute Options -->
+    <div class="timeframe-group">
+      <span class="tf-label">QUOTEX EXPIRY:</span>
+      <button class="tf-btn blocked" onclick="alert('5s expiry blocked: Sub-minute binary options have proven negative expectancy due to spread and latency.')" title="5s Blocked: Negative mathematical expectancy">5s 🚫</button>
+      <button class="tf-btn blocked" onclick="alert('15s expiry blocked: Sub-minute binary options have proven negative expectancy due to spread and latency.')" title="15s Blocked: Negative mathematical expectancy">15s 🚫</button>
+      <button class="tf-btn" onclick="setTimeframe('30s', this)">30s</button>
+      <button class="tf-btn active" onclick="setTimeframe('1M', this)">1M</button>
+      <button class="tf-btn" onclick="setTimeframe('2M', this)">2M</button>
+      <button class="tf-btn" onclick="setTimeframe('5M', this)">5M</button>
+      <button class="tf-btn" onclick="setTimeframe('15M', this)">15M</button>
+      <button class="tf-btn" onclick="setTimeframe('1H', this)">1H</button>
+    </div>
+
+    <!-- Quotex Dynamic Payout Rate Selector -->
+    <div class="payout-group">
+      <span class="payout-label">PAYOUT:</span>
+      <input type="number" id="payout-input" class="payout-input" min="50" max="98" value="87" step="1" onchange="onPayoutChange(this.value)">
+      <div class="payout-quick-btns">
+        <button class="payout-btn" onclick="setPayout(80, this)">80%</button>
+        <button class="payout-btn" onclick="setPayout(85, this)">85%</button>
+        <button class="payout-btn active" onclick="setPayout(87, this)">87%</button>
+        <button class="payout-btn" onclick="setPayout(90, this)">90%</button>
+        <button class="payout-btn" onclick="setPayout(92, this)">92%</button>
+      </div>
+    </div>
+
+    <div class="action-group">
+      <button class="btn-stream active" id="btn-stream-toggle" onclick="toggleStream()" title="Toggle Real-Time 1-Second Continuous Live Streaming">
+        <span id="stream-icon">⚡</span> STREAM: <b id="stream-status">LIVE (1s)</b>
+      </button>
+      <button class="btn-analyze" onclick="runCycle()">🔄 Run Swarm Cycle</button>
+    </div>
+  </div>
+
+  <!-- Hero Decision Banner (Quotex Direct Direction) -->
+  <div class="hero-action-card">
+    <div class="hero-left">
+      <div class="hero-header-tag">🤖 Swarm Chief Direction for Quotex</div>
+      <div class="hero-narrative" id="hero-narrative">Analyzing market conditions across 14 agents...</div>
+    </div>
+    <div class="hero-right">
+      <div class="direction-badge WAIT" id="hero-badge">WAIT</div>
+      <div class="hero-confidence" id="hero-confidence">Confidence: --%</div>
+    </div>
+  </div>
+
+  <!-- Quotex Live Candlestick Trading Terminal -->
+  <div class="panel chart-terminal-panel">
+    <div class="chart-top-bar">
+      <div class="chart-asset-info">
+        <div class="chart-asset-name" id="chart-asset-title">EUR/USD</div>
+        <div class="payout-pill" id="chart-payout">87% PAYOUT</div>
+        <div class="tf-badge-pill" id="chart-tf-display">1M CANDLES</div>
+        <div class="chart-price-box">
+          <span class="price-val" id="chart-live-price">1.08500</span>
+          <span class="price-spread" id="chart-live-spread">Spread: 1.2p</span>
+        </div>
+      </div>
+      <div class="chart-legend-info">
+        <span class="legend-item"><span class="legend-dot" style="background:#10b981;"></span> Target TP</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#ef4444;"></span> Stop Loss</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#f59e0b;"></span> Limit Entry</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#38bdf8;"></span> Live ECN</span>
+      </div>
+    </div>
+    <div class="chart-ohlc-bar" id="chart-ohlc-bar">
+      <span>O: <b id="ohlc-o">--</b></span>
+      <span>H: <b id="ohlc-h">--</b></span>
+      <span>L: <b id="ohlc-l">--</b></span>
+      <span>C: <b id="ohlc-c">--</b></span>
+      <span style="color:#34d399; font-size:0.75rem; margin-left:auto;" id="chart-stream-status">● Live Quotex Interbank Stream</span>
+    </div>
+    <div id="quotex-chart-container"></div>
+  </div>
+
+  <!-- Main 2-Column Grid -->
+  <div class="grid-layout">
+    
+    <!-- LEFT COLUMN: Snapshot, Breakdown Table, Rationale -->
+    <div>
+      
+      <!-- Market Snapshot & Metrics -->
+      <div class="panel">
+        <div class="panel-header">🔎 Market Snapshot & Metrics</div>
+        <div class="metrics-list">
+          <div class="metric-item">
+            <span class="lbl">Current Tick Price</span>
+            <span class="val" id="m-price">1.08500</span>
+          </div>
+          <div class="metric-item">
+            <span class="lbl">Spread</span>
+            <span class="val" id="m-spread">1.2 pips</span>
+          </div>
+          <div class="metric-item">
+            <span class="lbl">ATR (Volatility Range)</span>
+            <span class="val" id="m-atr">0.0015</span>
+          </div>
+          <div class="metric-item">
+            <span class="lbl">RSI (Momentum)</span>
+            <span class="val" id="m-rsi">48.5</span>
+          </div>
+          <div class="metric-item">
+            <span class="lbl">Sentiment Tone</span>
+            <span class="val" id="m-sentiment">Dovish (Diff: -0.18)</span>
+          </div>
+          <div class="metric-item">
+            <span class="lbl">Classified Regime</span>
+            <span class="val" id="m-regime">RANGE_BOUND</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Actionable Watchlist & Confluence Pipeline -->
+      <div class="watchlist-panel">
+        <div class="wl-header">
+          <span class="wl-title">🎯 Actionable Watchlist & Confluence Pipeline</span>
+          <span class="wl-status-badge" id="wl-status-badge" style="background:#1e293b; color:#94a3b8;">MONITORING</span>
+        </div>
+        
+        <div class="wl-meta-grid">
+          <div class="wl-meta-card">
+            <div class="wl-meta-lbl">Direction Candidate</div>
+            <div class="wl-meta-val" id="wl-direction-bias" style="color:#94a3b8;">NEUTRAL</div>
+          </div>
+          <div class="wl-meta-card">
+            <div class="wl-meta-lbl">Regime Optimal Expiry</div>
+            <div class="wl-meta-val" id="wl-optimal-expiry" style="color:#38bdf8;">1M - 2M</div>
+          </div>
+          <div class="wl-meta-card">
+            <div class="wl-meta-lbl">Fixed Stake (0.5%)</div>
+            <div class="wl-meta-val" id="wl-stake-size" style="color:#34d399;">$500.00</div>
+          </div>
+        </div>
+
+        <div class="wl-missing-box">
+          <div class="wl-missing-title">Pending Conditions Before Signal Fires:</div>
+          <ul class="wl-missing-list" id="wl-missing-list">
+            <li>Awaiting market scan...</li>
+          </ul>
+        </div>
+
+        <div class="wl-trigger-banner">
+          <span class="wl-trigger-icon">⚡</span>
+          <div class="wl-trigger-text" id="wl-action-trigger">Action Trigger: Waiting for candidate setup confluence...</div>
+        </div>
+      </div>
+
+      <!-- Structural Breakdown -->
+      <div class="panel">
+        <div class="panel-header">📈 Structural Breakdown</div>
+        <table class="breakdown-table">
+          <thead>
+            <tr>
+              <th>Indicator Category</th>
+              <th>Weight</th>
+              <th>Status / Value</th>
+              <th>Bias Impact</th>
+            </tr>
+          </thead>
+          <tbody id="breakdown-body">
+            <tr>
+              <td>Chart Pattern</td>
+              <td>35%</td>
+              <td id="b-pattern-val">CONSOLIDATION_RANGE</td>
+              <td><span class="bias-pill bias-neut" id="b-pattern-bias">Neutral</span></td>
+            </tr>
+            <tr>
+              <td>Quant / Momentum</td>
+              <td>25%</td>
+              <td id="b-quant-val">RSI 48.5 / ADX 22.0</td>
+              <td><span class="bias-pill bias-neut" id="b-quant-bias">Neutral</span></td>
+            </tr>
+            <tr>
+              <td>Market Sentiment</td>
+              <td>25%</td>
+              <td id="b-sent-val">Diff: -0.18 / Dovish</td>
+              <td><span class="bias-pill bias-bear" id="b-sent-bias">Mildly Bearish</span></td>
+            </tr>
+            <tr>
+              <td>Macro Environment</td>
+              <td>15%</td>
+              <td id="b-macro-val">Clear / No Blackout</td>
+              <td><span class="bias-pill bias-neut" id="b-macro-bias">Neutral</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Strategic Framework & Rationale -->
+      <div class="panel">
+        <div class="panel-header">💡 Strategic Framework & Rationale</div>
+        <ul class="rationale-list" id="rationale-list">
+          <li>Evaluating agent consensus...</li>
+        </ul>
+      </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Time Machine Simulator, 28-Pair Scanner, Alerts -->
+    <div>
+      
+      <!-- Upgraded Fat-Tailed Stochastic Simulator Card -->
+      <div class="panel timemachine-box">
+        <div class="tm-header">
+          <span class="tm-title">⏱️ Stochastic Fat-Tailed Simulator</span>
+          <span class="tm-badge" id="tm-paths">BOOTSTRAP + MERTON JUMPS</span>
+        </div>
+        <p style="font-size:0.78rem; color:#cbd5e1; margin-bottom:8px;" id="tm-desc">
+          Fat-tailed resampling with volatility clustering & Merton jump-diffusion across 2,000 forward paths.
+        </p>
+        <div style="font-size:0.75rem; color:#93c5fd; margin-bottom:10px;" id="tm-session">
+          Active Session: Detecting...
+        </div>
+
+        <div class="tm-stats">
+          <div>
+            <div class="tm-stat-num" id="tm-win" style="color:var(--green);">54.2%</div>
+            <div class="tm-stat-lbl">P(Target Hit)</div>
+            <div class="ci-subtext" id="tm-win-ci">[95% CI: --]</div>
+          </div>
+          <div>
+            <div class="tm-stat-num" id="tm-loss" style="color:var(--red);">45.8%</div>
+            <div class="tm-stat-lbl">P(Stop Hit)</div>
+            <div class="ci-subtext">Empirical Touch</div>
+          </div>
+          <div>
+            <div class="tm-stat-num" id="tm-payoff" style="color:#60a5fa;">+0.18R</div>
+            <div class="tm-stat-lbl">Expectancy</div>
+            <div class="ci-subtext" id="tm-payoff-ci">[95% CI: --]</div>
+          </div>
+        </div>
+
+        <!-- Asymmetric Quotex Break-Even Box -->
+        <div class="asymmetry-box">
+          <div class="asymmetry-item">
+            <span class="lbl">Payout Ratio</span>
+            <span class="val" id="tm-payout-rate">87.0%</span>
+          </div>
+          <div class="asymmetry-item">
+            <span class="lbl">Break-Even Hurdle</span>
+            <span class="val" id="tm-breakeven-rate" style="color:#fbbf24;">53.5%</span>
+          </div>
+          <div class="asymmetry-item">
+            <span class="lbl">95% CI Lower Bound</span>
+            <span class="val" id="tm-ci-lower">--</span>
+          </div>
+          <div class="asymmetry-item">
+            <span class="lbl">Edge Gate</span>
+            <span class="val" id="tm-hurdle-status" style="color:#94a3b8;">EVALUATING</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Out-of-Sample Calibration Card -->
+      <div class="panel" style="background:#0f172a; border: 1px solid #1e293b; padding:14px; margin-bottom:16px;">
+        <div class="panel-header" style="font-size:0.85rem; margin-bottom:8px;">
+          <span>🎯 Out-of-Sample Calibration & Brier Metric</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; font-size:0.78rem; font-family:monospace;">
+          <span>Brier Score: <b id="calib-brier" style="color:#38bdf8;">0.190</b> (Max 0.24)</span>
+          <span>Sample: <b id="calib-sample">0 trades</b></span>
+          <span>Status: <b id="calib-status" style="color:var(--green);">MONITORING</b></span>
+        </div>
+      </div>
+
+      <!-- 28-Pair Forex Scanner -->
+      <div class="panel">
+        <div class="panel-header">
+          <span>🌐 28-Pair Cross Universe Scanner</span>
+          <button style="background:transparent; border:none; color:#38bdf8; font-size:0.75rem; cursor:pointer;" onclick="runScanner()">Scan Now</button>
+        </div>
+        <table class="scanner-table">
+          <thead>
+            <tr>
+              <th>Pair</th>
+              <th>Conviction</th>
+              <th>Bias</th>
+              <th>Spread</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="scanner-body">
+            <tr><td colspan="5" style="text-align:center; color:#64748b;">Scanning 28 currency pairs...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Real-Time Alerts -->
+      <div class="panel">
+        <div class="panel-header">🚨 Swarm Event & Safety Ledger</div>
+        <div class="alert-box" id="alert-box">
+          <div class="alert-row">
+            <span class="alert-time">00:00:00</span>
+            <span class="alert-sev-INFO">System Initialized</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <script>
+    let currentTimeframe = "1M";
+    let isHalted = false;
+    let buzzerEnabled = localStorage.getItem("forex_buzzer_enabled") !== "false";
+    let audioCtx = null;
+    let lastBuzzerKey = "";
+    let lastBuzzerTimestamp = 0;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (AudioContext) {
+          audioCtx = new AudioContext();
+        }
+      }
+      if (audioCtx && audioCtx.state === "suspended") {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, type, duration, startTime, gainLevel = 0.35) {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(gainLevel, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      } catch (err) {
+        console.warn("Audio playTone failed:", err);
+      }
+    }
+
+    function playBuzzerSound(signalType) {
+      const ctx = getAudioContext();
+      if (!ctx) return;
+      const t = ctx.currentTime;
+      if (signalType === "CALL") {
+        // High-conviction rising chime for CALL (880Hz -> 1320Hz)
+        playTone(880, "sine", 0.14, t, 0.4);
+        playTone(1320, "triangle", 0.25, t + 0.12, 0.5);
+      } else {
+        // High-conviction descending buzzer for PUT (740Hz -> 440Hz)
+        playTone(740, "sawtooth", 0.14, t, 0.35);
+        playTone(440, "sine", 0.28, t + 0.12, 0.5);
+      }
+    }
+
+    function visualBuzzerFlash(signalType, confidence) {
+      const btn = document.getElementById("btn-buzzer-toggle");
+      if (btn) {
+        btn.classList.add("pulsing");
+        setTimeout(() => btn.classList.remove("pulsing"), 2000);
+      }
+      const badge = document.getElementById("hero-badge");
+      if (badge) {
+        badge.style.transform = "scale(1.1)";
+        setTimeout(() => { badge.style.transform = "scale(1)"; }, 400);
+      }
+    }
+
+    function triggerBuzzerIfEligible(signalType, confidence, pair) {
+      if (!buzzerEnabled) return;
+      const now = Date.now();
+      const signalKey = `${pair}_${signalType}_${Math.floor(confidence / 5)}`;
+      // Sound buzzer if new qualifying signal or after 25s persistence
+      if (signalKey !== lastBuzzerKey || (now - lastBuzzerTimestamp) > 25000) {
+        lastBuzzerKey = signalKey;
+        lastBuzzerTimestamp = now;
+        playBuzzerSound(signalType);
+        visualBuzzerFlash(signalType, confidence);
+      }
+    }
+
+    function updateBuzzerButtonUI() {
+      const btn = document.getElementById("btn-buzzer-toggle");
+      const icon = document.getElementById("buzzer-icon");
+      const status = document.getElementById("buzzer-status");
+      if (!btn) return;
+
+      if (buzzerEnabled) {
+        btn.classList.add("active");
+        icon.innerText = "🔔";
+        status.innerText = "ON";
+      } else {
+        btn.classList.remove("active");
+        icon.innerText = "🔕";
+        status.innerText = "OFF";
+      }
+    }
+
+    function toggleBuzzer() {
+      buzzerEnabled = !buzzerEnabled;
+      localStorage.setItem("forex_buzzer_enabled", buzzerEnabled ? "true" : "false");
+      updateBuzzerButtonUI();
+      
+      if (buzzerEnabled) {
+        const ctx = getAudioContext();
+        if (ctx) {
+          // Confirmation chirp when enabled
+          playTone(659, "sine", 0.15, ctx.currentTime, 0.3);
+        }
+      }
+    }
+
+    let currentPayout = 87;
+    let isStreaming = true;
+    let streamInterval = null;
+    let streamTickCount = 0;
+
+    function setPayout(val, btn) {
+      currentPayout = parseFloat(val);
+      document.getElementById("payout-input").value = currentPayout;
+      document.querySelectorAll(".payout-btn").forEach(b => b.classList.remove("active"));
+      if (btn) btn.classList.add("active");
+      const cp = document.getElementById("chart-payout");
+      if (cp) cp.innerText = currentPayout + "% PAYOUT";
+      runCycle();
+    }
+
+    function onPayoutChange(val) {
+      const p = Math.max(50, Math.min(98, parseFloat(val) || 87));
+      currentPayout = p;
+      document.getElementById("payout-input").value = p;
+      document.querySelectorAll(".payout-btn").forEach(b => {
+        b.classList.toggle("active", b.innerText === (p + "%"));
+      });
+      const cp = document.getElementById("chart-payout");
+      if (cp) cp.innerText = currentPayout + "% PAYOUT";
+      runCycle();
+    }
+
+    let isTickFetching = false;
+    let isCycleFetching = false;
+
+    function toggleStream() {
+      isStreaming = !isStreaming;
+      const btn = document.getElementById("btn-stream-toggle");
+      const status = document.getElementById("stream-status");
+      if (isStreaming) {
+        btn.classList.add("active");
+        status.innerText = "LIVE (1s)";
+        startStream();
+      } else {
+        btn.classList.remove("active");
+        status.innerText = "PAUSED";
+        if (streamInterval) clearTimeout(streamInterval);
+      }
+    }
+
+    async function streamTickLoop() {
+      if (!isStreaming) return;
+      if (!isTickFetching) {
+        isTickFetching = true;
+        const pair = document.getElementById("pair-select").value;
+        streamTickCount++;
+
+        try {
+          const resp = await fetch(`/api/tick?pair=${encodeURIComponent(pair)}&timeframe=${currentTimeframe}`);
+          if (resp.ok) {
+            const data = await resp.json();
+            if (data.tick) {
+              const tick = data.tick;
+              const isJpy = pair.includes("JPY");
+              const pDec = isJpy ? 3 : 5;
+              document.getElementById("chart-live-price").innerText = Number(tick.bid).toFixed(pDec);
+              document.getElementById("chart-live-spread").innerText = `Spread: ${tick.spread_pips}p`;
+              document.getElementById("m-price").innerText = Number(tick.bid).toFixed(pDec);
+              document.getElementById("m-spread").innerText = `${tick.spread_pips} pips`;
+
+              const streamStatus = document.getElementById("chart-stream-status");
+              if (streamStatus) {
+                const isReal = tick.source === "LIVE_INTERBANK_FEED";
+                streamStatus.innerHTML = isReal 
+                  ? `<span style="color:#10b981; font-weight:700;">● Live Real-Time Interbank Feed</span>`
+                  : `<span style="color:#38bdf8;">● Live Stream Active (1s Stream)</span>`;
+              }
+
+              if (candlestickSeries && data.latest_candle) {
+                candlestickSeries.update(data.latest_candle);
+              }
+            }
+          }
+        } catch (e) {
+          // ignore transient stream error
+        } finally {
+          isTickFetching = false;
+        }
+
+        // Run full multi-agent swarm cognition every 6 seconds (non-overlapping)
+        if (streamTickCount % 6 === 0 && !isCycleFetching) {
+          runCycle();
+        }
+      }
+
+      if (isStreaming) {
+        streamInterval = setTimeout(streamTickLoop, 1000);
+      }
+    }
+
+    function startStream() {
+      if (streamInterval) clearTimeout(streamInterval);
+      streamTickLoop();
+    }
+
+    function setTimeframe(tf, btn) {
+      currentTimeframe = tf;
+      document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+      const tfBadge = document.getElementById("chart-tf-display");
+      if (tfBadge) tfBadge.innerText = tf + " CANDLES";
+      runCycle();
+    }
+
+    async function runCycle() {
+      if (isCycleFetching) return;
+      isCycleFetching = true;
+      const pair = document.getElementById("pair-select").value;
+      try {
+        const resp = await fetch("/api/cycle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pair: pair, timeframe: currentTimeframe, payout: currentPayout })
+        });
+        const data = await resp.json();
+        renderState(data);
+      } catch (err) {
+        console.error("Failed to fetch swarm cycle:", err);
+      } finally {
+        isCycleFetching = false;
+      }
+    }
+
+    function renderState(data) {
+      if (!data) return;
+
+      const risk = data.risk_evaluation || {};
+      const proposal = data.proposal || {};
+
+      // Header Status & Circuit Breaker Tracking
+      document.getElementById("hdr-equity").innerText = "$" + (data.broker?.equity || 100000).toLocaleString('en-US', { minimumFractionDigits: 2 });
+      
+      const consLoss = risk.consecutive_losses !== undefined ? risk.consecutive_losses : 0;
+      const lossElem = document.getElementById("hdr-loss-streak");
+      if (lossElem) {
+        lossElem.innerText = `${consLoss} / 2`;
+        lossElem.style.color = consLoss >= 2 ? "var(--red)" : (consLoss === 1 ? "var(--amber)" : "var(--green)");
+      }
+
+      const sessTrades = risk.session_trades_count !== undefined ? risk.session_trades_count : 0;
+      const sessElem = document.getElementById("hdr-session-trades");
+      if (sessElem) {
+        sessElem.innerText = `${sessTrades} / 3`;
+        sessElem.style.color = sessTrades >= 3 ? "var(--red)" : "var(--blue)";
+      }
+
+      const sessName = risk.session_name || "LONDON_NY_OVERLAP";
+      const sessOk = risk.session_allowed !== undefined ? risk.session_allowed : true;
+      const sessNameElem = document.getElementById("hdr-session-name");
+      if (sessNameElem) {
+        sessNameElem.innerText = sessName;
+        sessNameElem.style.color = sessOk ? "#38bdf8" : "var(--red)";
+      }
+
+      // Actionable Watchlist & Confluence Pipeline
+      const dirBias = proposal.direction_bias || "NEUTRAL";
+      const approvalStatus = proposal.approval_status || (risk.approved ? "APPROVED" : "WATCHLIST_PENDING");
+      const optExpiry = proposal.optimal_expiry || "1M - 2M";
+      const stakeAmt = risk.stake_amount_usd || 500;
+      const stakePct = (risk.stake_pct || 0.005) * 100;
+      const missingConds = (risk.missing_conditions && risk.missing_conditions.length > 0) ? risk.missing_conditions : (proposal.missing_conditions || []);
+      const actionTrig = risk.action_trigger || proposal.action_trigger || "Awaiting confluence triggers...";
+
+      const wlBadge = document.getElementById("wl-status-badge");
+      if (wlBadge) {
+        if (approvalStatus === "APPROVED") {
+          wlBadge.innerText = "APPROVED FOR ENTRY";
+          wlBadge.style.background = "#064e3b";
+          wlBadge.style.color = "#34d399";
+        } else if (approvalStatus === "REJECTED") {
+          wlBadge.innerText = "REJECTED (CIRCUIT BREAKER)";
+          wlBadge.style.background = "#450a0a";
+          wlBadge.style.color = "#f87171";
+        } else {
+          wlBadge.innerText = "WATCHLIST (PENDING CONFLUENCE)";
+          wlBadge.style.background = "#422006";
+          wlBadge.style.color = "#fbbf24";
+        }
+      }
+
+      const dirBiasElem = document.getElementById("wl-direction-bias");
+      if (dirBiasElem) {
+        if (dirBias === "BUY") {
+          dirBiasElem.innerText = "BUY / CALL";
+          dirBiasElem.style.color = "#34d399";
+        } else if (dirBias === "SELL") {
+          dirBiasElem.innerText = "SELL / PUT";
+          dirBiasElem.style.color = "#ef4444";
+        } else {
+          dirBiasElem.innerText = "NEUTRAL (WAIT)";
+          dirBiasElem.style.color = "#94a3b8";
+        }
+      }
+
+      const optExpiryElem = document.getElementById("wl-optimal-expiry");
+      if (optExpiryElem) optExpiryElem.innerText = optExpiry;
+
+      const stakeElem = document.getElementById("wl-stake-size");
+      if (stakeElem) stakeElem.innerText = `$${stakeAmt.toFixed(2)} (${stakePct.toFixed(1)}%)`;
+
+      const wlMissingList = document.getElementById("wl-missing-list");
+      if (wlMissingList) {
+        wlMissingList.innerHTML = "";
+        if (missingConds.length === 0 && risk.approved) {
+          const li = document.createElement("li");
+          li.innerHTML = '<span style="color:#34d399;">✓ All institutional confluence, session, and risk conditions cleared</span>';
+          wlMissingList.appendChild(li);
+        } else {
+          missingConds.forEach(cond => {
+            const li = document.createElement("li");
+            li.innerText = cond;
+            wlMissingList.appendChild(li);
+          });
+        }
+      }
+
+      const actionTrigElem = document.getElementById("wl-action-trigger");
+      if (actionTrigElem) {
+        actionTrigElem.innerText = "Action Trigger: " + actionTrig;
+      }
+      
+      // Hero Action Card
+      const expl = data.explanation || {};
+      const badge = document.getElementById("hero-badge");
+      badge.innerText = expl.action_badge || "WAIT";
+      badge.className = "direction-badge " + (expl.action_badge || "WAIT");
+      document.getElementById("hero-confidence").innerText = "Confidence: " + (expl.confidence_pct || 50) + "%";
+      document.getElementById("hero-narrative").innerHTML = expl.narrative_summary || "Analyzing...";
+
+      // Check Buzzer Alert Condition: BUY/CALL or SELL/PUT with >= 60% confidence
+      const actionBadge = (expl.action_badge || "").toUpperCase();
+      const quotexAction = (expl.quotex_action || "").toUpperCase();
+      const conf = expl.confidence_pct || 0;
+      const isCall = actionBadge === "CALL" || (quotexAction.includes("CALL") || quotexAction.includes("BUY"));
+      const isPut = actionBadge === "PUT" || (quotexAction.includes("PUT") || quotexAction.includes("SELL"));
+
+      if ((isCall || isPut) && conf >= 60 && actionBadge !== "WAIT") {
+        triggerBuzzerIfEligible(isCall ? "CALL" : "PUT", conf, data.pair);
+      }
+
+      // Market Metrics
+      const tick = data.tick || {};
+      const quant = data.quant || {};
+      const sentBase = data.sentiment_base || {};
+      const sentQuote = data.sentiment_quote || {};
+      const regime = data.regime || {};
+
+      document.getElementById("m-price").innerText = (tick.bid || 1.08500).toFixed(5);
+      document.getElementById("m-spread").innerText = (tick.spread_pips || 1.2).toFixed(1) + " pips";
+      document.getElementById("m-atr").innerText = (quant.atr || 0.0015).toFixed(5);
+      document.getElementById("m-rsi").innerText = (quant.rsi || 50.0).toFixed(1);
+      
+      const sentDiff = ((sentBase.sentiment_score || 0) - (sentQuote.sentiment_score || 0)).toFixed(2);
+      document.getElementById("m-sentiment").innerText = (sentDiff > 0 ? "Hawkish" : (sentDiff < 0 ? "Dovish" : "Neutral")) + " (" + sentDiff + ")";
+      document.getElementById("m-regime").innerText = regime.regime || "RANGE_BOUND";
+
+      // Structural Breakdown Table
+      const pattern = data.pattern || {};
+      const macroBase = data.macro_base || {};
+      
+      document.getElementById("b-pattern-val").innerText = (pattern.detected_patterns || ["CONSOLIDATION_RANGE"]).join(", ");
+      const pBias = document.getElementById("b-pattern-bias");
+      pBias.innerText = pattern.bias || "Neutral";
+      pBias.className = "bias-pill " + (pattern.bias === "BUY" ? "bias-bull" : (pattern.bias === "SELL" ? "bias-bear" : "bias-neut"));
+
+      document.getElementById("b-quant-val").innerText = `RSI ${(quant.rsi || 50).toFixed(1)} / ADX ${(quant.adx || 20).toFixed(1)}`;
+      const qBias = document.getElementById("b-quant-bias");
+      qBias.innerText = quant.bias || "Neutral";
+      qBias.className = "bias-pill " + (quant.bias === "BUY" ? "bias-bull" : (quant.bias === "SELL" ? "bias-bear" : "bias-neut"));
+
+      document.getElementById("b-sent-val").innerText = `Diff: ${sentDiff} / ${sentBase.risk_on_off || "NEUTRAL"}`;
+      const sBias = document.getElementById("b-sent-bias");
+      sBias.innerText = (sentDiff > 0.1 ? "Bullish" : (sentDiff < -0.1 ? "Bearish" : "Neutral"));
+      sBias.className = "bias-pill " + (sentDiff > 0.1 ? "bias-bull" : (sentDiff < -0.1 ? "bias-bear" : "bias-neut"));
+
+      document.getElementById("b-macro-val").innerText = macroBase.lock_trading_window ? "BLACKOUT LOCK" : "Clear / No Blackout";
+      const mBias = document.getElementById("b-macro-bias");
+      mBias.innerText = macroBase.lock_trading_window ? "Locked" : "Neutral";
+      mBias.className = "bias-pill " + (macroBase.lock_trading_window ? "bias-bear" : "bias-neut");
+
+      // Strategic Rationale
+      const rList = document.getElementById("rationale-list");
+      rList.innerHTML = "";
+      (expl.strategic_rationale || []).forEach(item => {
+        const li = document.createElement("li");
+        li.innerHTML = item;
+        rList.appendChild(li);
+      });
+
+      // Time Machine Fat-Tailed Stochastic Simulator
+      const tm = risk.timemachine_metrics || {};
+      let beRate = 53.5;
+      const hurdleElem = document.getElementById("tm-hurdle-status");
+
+      if (tm.simulations_run) {
+        document.getElementById("tm-win").innerText = tm.p_target_hit_pct + "%";
+        document.getElementById("tm-win-ci").innerText = `[95% CI: ${tm.ci_target_hit_95_lower}% - ${tm.ci_target_hit_95_upper}%]`;
+        document.getElementById("tm-loss").innerText = tm.p_stop_hit_pct + "%";
+        document.getElementById("tm-payoff").innerText = (tm.expected_payoff_r >= 0 ? "+" : "") + tm.expected_payoff_r + "R";
+        document.getElementById("tm-payoff-ci").innerText = `[95% CI: ${tm.ci_expected_r_95_lower}R to ${tm.ci_expected_r_95_upper}R]`;
+        
+        if (tm.session_profile) {
+          document.getElementById("tm-session").innerText = `Active Session: ${tm.session_profile.session} (${tm.session_profile.description})`;
+        }
+        
+        beRate = tm.quotex_breakeven_win_rate_pct || 53.5;
+        document.getElementById("tm-breakeven-rate").innerText = beRate.toFixed(1) + "%";
+        
+        const ciLow = tm.binary_ci_95_lower !== undefined ? tm.binary_ci_95_lower : "--";
+        document.getElementById("tm-ci-lower").innerText = ciLow + "%";
+        
+        if (hurdleElem) {
+          if (tm.binary_odds_cleared) {
+            hurdleElem.innerText = "CLEARED";
+            hurdleElem.style.color = "var(--green)";
+          } else {
+            hurdleElem.innerText = "SUB-BREAKEVEN (VETO)";
+            hurdleElem.style.color = "var(--red)";
+          }
+        }
+      } else {
+        beRate = (100 / (100 + currentPayout)) * 100;
+        document.getElementById("tm-breakeven-rate").innerText = beRate.toFixed(1) + "%";
+        document.getElementById("tm-ci-lower").innerText = "AWAITING SETUP";
+        if (hurdleElem) {
+          hurdleElem.innerText = "AWAITING CONFLUENCE";
+          hurdleElem.style.color = "var(--amber)";
+        }
+      }
+
+      // Out-of-Sample Calibration
+      const calib = data.calibration || {};
+      if (calib.brier_score !== undefined) {
+        document.getElementById("calib-brier").innerText = calib.brier_score.toFixed(3);
+        document.getElementById("calib-sample").innerText = (calib.sample_size || 0) + " trades";
+        const calibStatusElem = document.getElementById("calib-status");
+        calibStatusElem.innerText = calib.status || "MONITORING";
+        calibStatusElem.style.color = calib.calibration_healthy ? "var(--green)" : "var(--red)";
+      }
+
+      // Alerts
+      if (data.alerts) renderAlerts(data.alerts);
+
+      // Quotex Live Interactive Candlestick Chart
+      if (data.candles && data.candles.length > 0) {
+        renderQuotexChart(data.candles, data.proposal, data.tick, data.pair, data.timeframe);
+      }
+    }
+
+    let chart = null;
+    let candlestickSeries = null;
+    let tpPriceLine = null;
+    let slPriceLine = null;
+    let entryPriceLine = null;
+    let currentChartPair = "";
+    let currentChartTf = "";
+    let chartInitialDataSet = false;
+
+    const PAYOUT_MAP = {
+      "EUR/USD": "87%",
+      "GBP/USD": "85%",
+      "USD/JPY": "88%",
+      "AUD/USD": "84%",
+      "USD/CAD": "82%",
+      "USD/CHF": "80%",
+      "NZD/USD": "83%"
+    };
+
+    function initQuotexChart(pair) {
+      const container = document.getElementById("quotex-chart-container");
+      if (!container || typeof LightweightCharts === 'undefined') return false;
+
+      container.innerHTML = ""; // clean previous if any
+      const isJpy = pair.includes("JPY");
+      const precision = isJpy ? 3 : 5;
+      const minMove = isJpy ? 0.001 : 0.00001;
+
+      chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth || 800,
+        height: 420,
+        layout: {
+          background: { type: 'solid', color: '#080d16' },
+          textColor: '#94a3b8',
+          fontSize: 11,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+        },
+        grid: {
+          vertLines: { color: 'rgba(255, 255, 255, 0.03)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.03)' }
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: { color: '#38bdf8', width: 1, style: LightweightCharts.LineStyle.Dashed },
+          horzLine: { color: '#38bdf8', width: 1, style: LightweightCharts.LineStyle.Dashed }
+        },
+        rightPriceScale: {
+          borderColor: '#1e293b',
+          scaleMargins: { top: 0.12, bottom: 0.12 },
+          autoScale: true
+        },
+        timeScale: {
+          borderColor: '#1e293b',
+          timeVisible: true,
+          secondsVisible: true,
+          rightOffset: 12,
+          barSpacing: 10
+        }
+      });
+
+      candlestickSeries = chart.addCandlestickSeries({
+        upColor: '#00b06f',
+        downColor: '#ef4444',
+        borderVisible: false,
+        wickUpColor: '#00b06f',
+        wickDownColor: '#ef4444',
+        priceFormat: {
+          type: 'price',
+          precision: precision,
+          minMove: minMove
+        }
+      });
+
+      // Subscribe to crosshair move to display real-time OHLC hovering
+      chart.subscribeCrosshairMove(param => {
+        if (!param || !param.time || !param.seriesData) return;
+        const bar = param.seriesData.get(candlestickSeries);
+        if (bar) {
+          const pDec = currentChartPair.includes("JPY") ? 3 : 5;
+          document.getElementById("ohlc-o").innerText = Number(bar.open).toFixed(pDec);
+          document.getElementById("ohlc-h").innerText = Number(bar.high).toFixed(pDec);
+          document.getElementById("ohlc-l").innerText = Number(bar.low).toFixed(pDec);
+          document.getElementById("ohlc-c").innerText = Number(bar.close).toFixed(pDec);
+        }
+      });
+
+      // Auto-resize on window resize
+      window.addEventListener('resize', () => {
+        if (chart && container) {
+          chart.applyOptions({ width: container.clientWidth });
+        }
+      });
+
+      return true;
+    }
+
+    function renderQuotexChart(candles, proposal, tick, pair, tf) {
+      if (typeof LightweightCharts === 'undefined') {
+        const container = document.getElementById("quotex-chart-container");
+        if (container) container.innerHTML = "<p style='color:#94a3b8; padding:20px;'>Loading Chart Engine...</p>";
+        return;
+      }
+
+      if (!chart || !candlestickSeries) {
+        const ok = initQuotexChart(pair);
+        if (!ok) return;
+      }
+
+      // Update Top Bar Details
+      document.getElementById("chart-asset-title").innerText = pair;
+      document.getElementById("chart-payout").innerText = (currentPayout || 87) + "% PAYOUT";
+      document.getElementById("chart-tf-display").innerText = tf.toUpperCase() + " CANDLES";
+      
+      const isJpy = pair.includes("JPY");
+      const precision = isJpy ? 3 : 5;
+
+      if (tick) {
+        document.getElementById("chart-live-price").innerText = Number(tick.bid).toFixed(precision);
+        document.getElementById("chart-live-spread").innerText = `Spread: ${(tick.spread_pips || 1.2).toFixed(1)}p`;
+      }
+
+      // Deduplicate and sort candles by time ascending
+      const seen = new Set();
+      const cleanCandles = [];
+      for (const c of candles) {
+        if (!seen.has(c.time)) {
+          seen.add(c.time);
+          cleanCandles.push({
+            time: c.time,
+            open: Number(c.open),
+            high: Number(c.high),
+            low: Number(c.low),
+            close: Number(c.close)
+          });
+        }
+      }
+      cleanCandles.sort((a, b) => a.time - b.time);
+
+      // Check if pair or precision changed
+      if (pair !== currentChartPair) {
+        candlestickSeries.applyOptions({
+          priceFormat: {
+            type: 'price',
+            precision: precision,
+            minMove: isJpy ? 0.001 : 0.00001
+          }
+        });
+      }
+
+      const pairOrTfChanged = (pair !== currentChartPair || tf !== currentChartTf);
+      currentChartPair = pair;
+      currentChartTf = tf;
+
+      // Update series data efficiently (only full reset on pair/timeframe change)
+      if (pairOrTfChanged || !chartInitialDataSet) {
+        candlestickSeries.setData(cleanCandles);
+        chart.timeScale().fitContent();
+        chartInitialDataSet = true;
+      } else if (cleanCandles.length > 0) {
+        candlestickSeries.update(cleanCandles[cleanCandles.length - 1]);
+      }
+
+      // Update floating OHLC display to latest candle
+      if (cleanCandles.length > 0) {
+        const last = cleanCandles[cleanCandles.length - 1];
+        document.getElementById("ohlc-o").innerText = last.open.toFixed(precision);
+        document.getElementById("ohlc-h").innerText = last.high.toFixed(precision);
+        document.getElementById("ohlc-l").innerText = last.low.toFixed(precision);
+        document.getElementById("ohlc-c").innerText = last.close.toFixed(precision);
+      }
+
+      // Remove previous target price lines
+      if (tpPriceLine) {
+        try { candlestickSeries.removePriceLine(tpPriceLine); } catch (e) {}
+        tpPriceLine = null;
+      }
+      if (slPriceLine) {
+        try { candlestickSeries.removePriceLine(slPriceLine); } catch (e) {}
+        slPriceLine = null;
+      }
+      if (entryPriceLine) {
+        try { candlestickSeries.removePriceLine(entryPriceLine); } catch (e) {}
+        entryPriceLine = null;
+      }
+
+      // Draw Institutional Price Lines if an active proposal exists
+      if (proposal && proposal.direction && proposal.direction !== "NEUTRAL") {
+        if (proposal.target_take_profit) {
+          tpPriceLine = candlestickSeries.createPriceLine({
+            price: Number(proposal.target_take_profit),
+            color: '#10b981',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: 'TARGET TP'
+          });
+        }
+        if (proposal.target_stop_loss) {
+          slPriceLine = candlestickSeries.createPriceLine({
+            price: Number(proposal.target_stop_loss),
+            color: '#ef4444',
+            lineWidth: 2,
+            lineStyle: LightweightCharts.LineStyle.Dashed,
+            axisLabelVisible: true,
+            title: 'STOP LOSS'
+          });
+        }
+        if (proposal.entry_price) {
+          entryPriceLine = candlestickSeries.createPriceLine({
+            price: Number(proposal.entry_price),
+            color: '#f59e0b',
+            lineWidth: 1,
+            lineStyle: LightweightCharts.LineStyle.Dotted,
+            axisLabelVisible: true,
+            title: 'LIMIT ENTRY'
+          });
+        }
+      }
+    }
+
+    async function runScanner() {
+      try {
+        const resp = await fetch("/api/scanner");
+        const data = await resp.json();
+        const tbody = document.getElementById("scanner-body");
+        tbody.innerHTML = "";
+        (data.ranked_setups || []).forEach(item => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td><b>${item.pair}</b></td>
+            <td><b style="color:${item.conviction_score > 70 ? 'var(--green)' : '#94a3b8'}">${item.conviction_score}</b></td>
+            <td><span class="bias-pill ${item.bias === 'BUY' ? 'bias-bull' : (item.bias === 'SELL' ? 'bias-bear' : 'bias-neut')}">${item.bias}</span></td>
+            <td>${item.spread_pips} p</td>
+            <td><span class="${item.status === 'HOT_SETUP' ? 'rank-hot' : ''}">${item.status}</span></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (e) {
+        console.error("Scanner failed", e);
+      }
+    }
+
+    async function renderAlerts(alerts) {
+      const box = document.getElementById("alert-box");
+      box.innerHTML = "";
+      alerts.forEach(a => {
+        const div = document.createElement("div");
+        div.className = "alert-row";
+        div.innerHTML = `
+          <span class="alert-time">${a.timestamp}</span>
+          <span class="alert-sev-${a.severity}">[${a.severity}]</span>
+          <span><b>${a.pair}</b>: ${a.message}</span>
+        `;
+        box.appendChild(div);
+      });
+    }
+
+    async function toggleKillSwitch() {
+      const action = isHalted ? "reset" : "trigger";
+      const resp = await fetch("/api/kill-switch", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: action, reason: "Operator toggled GUI kill switch" })
+      });
+      const data = await resp.json();
+      isHalted = data.is_halted;
+      const btn = document.getElementById("btn-kill-toggle");
+      const statusHdr = document.getElementById("hdr-status");
+      if (isHalted) {
+        btn.innerText = "RESUME TRADING";
+        btn.classList.add("active");
+        if (statusHdr) {
+          statusHdr.innerText = "HALTED";
+          statusHdr.style.color = "var(--red)";
+        }
+      } else {
+        btn.innerText = "HALT SWARM";
+        btn.classList.remove("active");
+        if (statusHdr) {
+          statusHdr.innerText = "ACTIVE";
+          statusHdr.style.color = "var(--green)";
+        }
+      }
+      runCycle();
+    }
+
+    // Initial load
+    updateBuzzerButtonUI();
+    runCycle();
+    runScanner();
+    startStream(); // Real-time 1s streaming tick pipeline
+  </script>
+</body>
+</html>
